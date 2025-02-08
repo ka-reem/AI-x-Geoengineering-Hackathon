@@ -33,17 +33,17 @@ def main(file_path):
         # The "select_time_impacts()" function is used to select which flight period the user would like to plot from among the
         # data set files on the user's computer 
         if campaign_name == 'impacts':
-            date_files= select_flight_impacts(dataDir) #<--Selected IMPACTS CRS data files based on date 
+            date_files = select_flight_impacts(dataDir) #<--Selected IMPACTS CRS data files based on date 
             
-            #Check whether 'None' was returned if no impacts files were found in the directory. Returns to the
-            #campaign selection step if 'None'. Continues through the code if files were found.
-            if date_files==None:
+            #Check whether 'None' was returned or empty list if no impacts files were found in the directory
+            if date_files is None or len(date_files) == 0:
+                print("No IMPACTS data files found for the selected date")
                 continue
-            else: pass
+                
             fileCRS = date_files[0] #<--File path for the selected file 
             
         # ***************************************
-        # Access CRS data of selected file
+        # Access CRS data of selected file``
         # ***************************************
             t0 = datetime.fromisoformat('1970-01-01T00:00:00') #<--Epoch time used to convert time field in IMPACTS CRS files
             
