@@ -1,0 +1,2 @@
+*.nc filter=lfs diff=lfs merge=lfs -text
+src/data/GOESR_CRS_L1B_20170507_v0.nc filter=lfs diff=lfs merge=lfs -text
