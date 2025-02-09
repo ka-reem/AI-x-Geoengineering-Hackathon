@@ -8,3 +8,5 @@ venv
 */.next
 */node_modules
 
+*/data
+
