@@ -1,6 +1,7 @@
 import xarray as xr
 import h5py
 import os,sys
+import numpy as np  # Add this import
 from datetime import datetime, timedelta 
 
 #Import functions from CRS_Recipe_Functions.py file
@@ -70,23 +71,36 @@ def main(file_path):
                     if(not cs): break
                     print('processing started.  This may take a few minutes')
             
-                    if len(cs)>0:
+                    if len(cs)>0:  # For IMPACTS
+                        #*************************************************************
+                        # Data processing first
+                        #*************************************************************
+                        timeCRS  = ds['Time']['Data']['TimeUTC'][:]  
+                        timeCRS=[(t0+timedelta(seconds=float(s))) for s in timeCRS] 
+                        extCRS = ds['Products']['Information']['Range'][:]/1000   
+                        Ref = ds['Products']['Data']['dBZe'][:] 
+                        DopV = ds['Products']['Data']['Velocity_corrected'][:]
+                        datap = {'Ref':[a for a,b in zip(Ref, timeCRS) if b in cs], 'DopV':[a for a,b in zip(DopV, timeCRS) if b in cs]}   
+                        times = [x for x in timeCRS if x in cs]
+                        
+                        # Now print data summary
+                        data_summary = f"""
+Data Summary:
+Time range: {times[0]} to {times[-1]}
+Height range: {min(extCRS):.2f}km to {max(extCRS):.2f}km
+Reflectivity range: {min([min(r) for r in datap['Ref']]):.2f} to {max([max(r) for r in datap['Ref']]):.2f} dBZ
+Doppler velocity range: {min([min(d) for d in datap['DopV']]):.2f} to {max([max(d) for d in datap['DopV']]):.2f} m/s
+"""
+                        print(data_summary)
+                        
+                        # Continue with plotting
+                        plot_start = timeCRS[0]
+                        plot_end = timeCRS[-1]
                         #*************************************************************
                         # Plot 2-D image of CRS reflectivity and Doppler velocity data
                         # The time, height (range from aircraft), reflectivity, and Doppler velocity fields are extracted from
                         # each CRS data file, and input into the "plot_CRS2D()" function that will generate the 2-D image
                         #*************************************************************
-                        timeCRS  = ds['Time']['Data']['TimeUTC'][:]  #<--seconds since epoch
-                        timeCRS=[(t0+timedelta(seconds=float(s))) for s in timeCRS] #<--Convert timeCRS from seconds since epoch to date/time object
-                        extCRS = ds['Products']['Information']['Range'][:]/1000 #<--range from radar/aircraft in [km]  
-                        Ref = ds['Products']['Data']['dBZe'][:] #<--radar reflectivity in [dBZ]
-                        DopV = ds['Products']['Data']['Velocity_corrected'][:]#<--Doppler velecity after correction [m/s]
-                        datap = {'Ref':[a for a,b in zip(Ref, timeCRS) if b in cs], 'DopV':[a for a,b in zip(DopV, timeCRS) if b in cs]} #<--Dictionary containing Ref and DopV  
-                        times = [x for x in timeCRS if x in cs] #<--Select the times from full timeCRS array that are within the subset indicated by the user
-                        #ref, dopv, times = list(zip(*filter(lambda x: x[2] in cs, zip(Ref, DopV, timeCRS))))
-                        #datap = {'Ref': ref,'DopV': dopv}  # <--Dictionary containing Ref and DopV
-                        plot_start = timeCRS[0] #<--Datetime object for plot start
-                        plot_end = timeCRS[-1] #<--Datetime object for plot end 
                         fig=plot_CRS2D(datap,times,extCRS,plot_start,plot_end,reverseZ=True) #<--Create the 2-D plot of CRS reflectivity & Doppler velocity
             
                         #*************************************************************
@@ -143,21 +157,75 @@ def main(file_path):
                     if(not cs): break
                     print('processing started.  This may take a few minutes')
             
-                    if len(cs.time>0):
+                    if len(cs.time>0):  # For GOES-R PLT
                         #*************************************************************
-                        # Plot 2-D image of CRS reflectivity and Doppler velocity data
-                        # The time, height (range from aircraft), reflectivity, and Doppler velocity fields are extracted from
-                        # each CRS data file, and input into the "plot_CRS2D()" function that will generate the 2-D image
+                        # Process data first
                         #*************************************************************
-                        extCRS = cs['range'].values/1000 #<--range from radar/aircraft in [km]
-                        hrCRS  = cs['time'].values       #<--hours in UTC
-                        datap  ={'Ref':cs['ref'].values, #<--radar reflectivity in [dBZ]
-                                'DopV':cs['dop'].values} #<--Doppler velecity after correction [m/s]
-                        times=[(t0+timedelta(hours=float(h))) for h in hrCRS] #<---convert hours to Datetime objects
-                        plot_start = (t0+timedelta(hours=float(hrCRS[0]))) #<--Datetime object for plot start
-                        plot_end = (t0+timedelta(hours=float(hrCRS[-1]))) #<--Datetime object for plot end 
-                        fig=plot_CRS2D(datap,times,extCRS,plot_start,plot_end,reverseZ=True) #<--Create the 2-D plot of CRS reflectivity & Doppler velocity
-            
+                        extCRS = cs['range'].values/1000 
+                        hrCRS  = cs['time'].values      
+                        datap  ={'Ref':cs['ref'].values,
+                                'DopV':cs['dop'].values}
+                        times=[(t0+timedelta(hours=float(h))) for h in hrCRS]
+                        
+                        # Enhanced data summary with more details
+                        data_summary = f"""
+Detailed Data Summary:
+Time range: {times[0]} to {times[-1]}
+Number of time points: {len(times)}
+Height range: {min(extCRS):.2f}km to {max(extCRS):.2f}km
+Number of height levels: {len(extCRS)}
+
+Reflectivity Statistics:
+- Range: {np.nanmin(datap['Ref']):.2f} to {np.nanmax(datap['Ref']):.2f} dBZ
+- Mean: {np.nanmean(datap['Ref']):.2f} dBZ
+- Number of valid points: {np.sum(~np.isnan(datap['Ref']))}
+- Number of NaN points: {np.sum(np.isnan(datap['Ref']))}
+
+Doppler Velocity Statistics:
+- Range: {np.nanmin(datap['DopV']):.2f} to {np.nanmax(datap['DopV']):.2f} m/s
+- Mean: {np.nanmean(datap['DopV']):.2f} m/s
+- Number of valid points: {np.sum(~np.isnan(datap['DopV']))}
+- Number of NaN points: {np.sum(np.isnan(datap['DopV']))}
+
+Data Shape:
+- Reflectivity shape: {datap['Ref'].shape}
+- Doppler Velocity shape: {datap['DopV'].shape}
+"""
+                        print(data_summary)
+                        
+                        # Print first few data points as sample
+                        print("\nSample Data Points (first 5):")
+                        for i in range(min(5, len(times))):
+                            print(f"\nTime: {times[i]}")
+                            print(f"Height: {extCRS[0]:.2f}km")
+                            print(f"Reflectivity: {datap['Ref'][i,0]:.2f} dBZ")
+                            print(f"Doppler Velocity: {datap['DopV'][i,0]:.2f} m/s")
+
+                        # Print all data points
+                        print("\nAll Data Points:")
+                        print("Format: Point #) Time | Height | Reflectivity | Doppler Velocity")
+                        print("-" * 70)
+                        
+                        point_num = 1
+                        for t_idx, t in enumerate(times):
+                            for h_idx, h in enumerate(extCRS):
+                                ref_val = datap['Ref'][t_idx, h_idx]
+                                dop_val = datap['DopV'][t_idx, h_idx]
+                                if not (np.isnan(ref_val) and np.isnan(dop_val)):  # Only print if at least one value is not NaN
+                                    print(f"{point_num}) {t} | {h:.2f}km | {ref_val:.2f}dBZ | {dop_val:.2f}m/s")
+                                    point_num += 1
+                            if t_idx == 0:  # After first time point, ask if user wants to continue
+                                response = input("\nContinue printing? (y/n): ")
+                                if response.lower() != 'y':
+                                    print("Printing stopped. Moving to plot generation...")
+                                    break
+
+                        plot_start = (t0+timedelta(hours=float(hrCRS[0])))
+                        plot_end = (t0+timedelta(hours=float(hrCRS[-1])))
+                        
+                        # Continue with plotting
+                        fig=plot_CRS2D(datap,times,extCRS,plot_start,plot_end,reverseZ=True)
+                        
                         #*************************************************************
                         # User can select whether to save the generated plot
                         # The image start and end time are retrieved from the full period or subset to be used in the "SAVEsubset()"
@@ -214,6 +282,16 @@ def main(file_path):
                     print('processing started.  This may take a few minutes')
             
                     if len(cs.timed>0):
+                        # Print data summary before plotting
+                        data_summary = f"""
+Data Summary:
+Time range: {times[0]} to {times[-1]}
+Height range: {min(extCRS):.2f}km to {max(extCRS):.2f}km
+Reflectivity range: {datap['Ref'].min():.2f} to {datap['Ref'].max():.2f} dBZ
+Doppler velocity range: {datap['DopV'].min():.2f} to {datap['DopV'].max():.2f} m/s
+"""
+                        print(data_summary)
+                        
                         #*************************************************************
                         # Plot 2-D image of CRS reflectivity and Doppler velocity data
                         # The time, height (range from aircraft), reflectivity, and Doppler velocity fields are extracted from
@@ -284,6 +362,16 @@ def main(file_path):
                     print('processing started.  This may take a few minutes')
             
                     if len(cs.timed>0):
+                        # Print data summary before plotting
+                        data_summary = f"""
+Data Summary:
+Time range: {times[0]} to {times[-1]}
+Height range: {min(extCRS):.2f}km to {max(extCRS):.2f}km
+Reflectivity range: {datap['Ref'].min():.2f} to {datap['Ref'].max():.2f} dBZ
+Doppler velocity range: {datap['DopV'].min():.2f} to {datap['DopV'].max():.2f} m/s
+"""
+                        print(data_summary)
+                        
                         #*************************************************************
                         # Plot 2-D image of CRS reflectivity and Doppler velocity data
                         # The time, height (range from aircraft), reflectivity, and Doppler velocity fields are extracted from
