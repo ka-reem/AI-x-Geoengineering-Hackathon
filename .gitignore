@@ -1,1 +1,10 @@
+
 src/data/crs/IMPACTS2023_CRS_L1B_RevA_20230228.h5
+# backend
+venv
+.env
+
+# frontend
+*/.next
+*/node_modules
+

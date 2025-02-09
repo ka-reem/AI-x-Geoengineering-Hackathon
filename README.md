@@ -1,3 +1,4 @@
+
 # Autonomous Climate Intelligence Agent
 
 An AI-powered application that generates comprehensive "Geoengineering Weekly Intelligence Reports" by aggregating and analyzing data from multiple climate-related sources.
@@ -77,3 +78,13 @@ The generated reports include:
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+=======
+To run deepseek
+
+python -m venv venv
+source venv/bin/activate
+
+pip install -r requirements.txt
+
+python main.py
+
