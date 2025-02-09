@@ -1,0 +1,14 @@
+crewai>=0.100.1
+llama-index-core>=0.12.16
+llama-index-readers-file>=0.4.4
+openai>=1.13.3
+python-dotenv>=1.0.0
+requests>=2.31.0
+pandas>=2.2.2
+numpy>=1.26.4
+pydantic>=2.9.2
+fastapi>=0.115.8
+uvicorn>=0.34.0
+python-dateutil>=2.9.0
+beautifulsoup4>=4.12.3
+h5py>=3.10.0 
