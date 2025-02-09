@@ -14,7 +14,9 @@ from ipynb.fs.full.CRS_Recipe_Functions import select_campaign, select_flight_ol
 file_path = 'data/'
 
 def main(file_path):
-
+    # Add this variable at the start of main() to store the data string
+    single_row_data = ""
+    
     dataDir = os.path.join(file_path,'')
     print(dataDir)
     
@@ -87,7 +89,29 @@ def main(file_path):
                         #datap = {'Ref': ref,'DopV': dopv}  # <--Dictionary containing Ref and DopV
                         plot_start = timeCRS[0] #<--Datetime object for plot start
                         plot_end = timeCRS[-1] #<--Datetime object for plot end 
-                        fig=plot_CRS2D(datap,times,extCRS,plot_start,plot_end,reverseZ=True) #<--Create the 2-D plot of CRS reflectivity & Doppler velocity
+
+                        # Move the data capture and printing BEFORE the plot
+                        # After loading the data, get a single row
+                        time_point = timeCRS[0]  # First timestamp
+                        # Get the first row from the subset data instead of raw data
+                        ref_point = datap['Ref'][0]  # First row of reflectivity data from subset
+                        dopv_point = datap['DopV'][0]  # First row of Doppler velocity data from subset
+                        range_points = extCRS    # Range values
+                        
+                        # Format the data as a string
+                        single_row_data = (f"Time: {time_point}\n"
+                                         f"Ranges (km): {','.join(map(str, range_points))}\n"
+                                         f"Reflectivity (dBZ): {','.join(map(str, ref_point))}\n"
+                                         f"Doppler Velocity (m/s): {','.join(map(str, dopv_point))}")
+                        
+                        print("\nCaptured single row data:")
+                        print("=" * 50)
+                        print(single_row_data)
+                        print("=" * 50)
+                        print("\nNow displaying plot...\n")
+
+                        # Then create and show the plot
+                        fig=plot_CRS2D(datap,times,extCRS,plot_start,plot_end,reverseZ=True)
             
                         #*************************************************************
                         # User can select whether to save the generated plot
@@ -156,7 +180,28 @@ def main(file_path):
                         times=[(t0+timedelta(hours=float(h))) for h in hrCRS] #<---convert hours to Datetime objects
                         plot_start = (t0+timedelta(hours=float(hrCRS[0]))) #<--Datetime object for plot start
                         plot_end = (t0+timedelta(hours=float(hrCRS[-1]))) #<--Datetime object for plot end 
-                        fig=plot_CRS2D(datap,times,extCRS,plot_start,plot_end,reverseZ=True) #<--Create the 2-D plot of CRS reflectivity & Doppler velocity
+
+                        # Move the data capture and printing BEFORE the plot
+                        # After loading the data, get a single row
+                        time_point = times[0]    # First timestamp
+                        ref_point = datap['Ref'][0]  # First row of reflectivity data
+                        dopv_point = datap['DopV'][0]  # First row of Doppler velocity data
+                        range_points = extCRS    # Range values
+                        
+                        # Format the data as a string
+                        single_row_data = (f"Time: {time_point}\n"
+                                         f"Ranges (km): {','.join(map(str, range_points))}\n"
+                                         f"Reflectivity (dBZ): {','.join(map(str, ref_point))}\n"
+                                         f"Doppler Velocity (m/s): {','.join(map(str, dopv_point))}")
+                        
+                        print("\nCaptured single row data:")
+                        print("=" * 50)
+                        print(single_row_data)
+                        print("=" * 50)
+                        print("\nNow displaying plot...\n")
+
+                        # Then create and show the plot
+                        fig=plot_CRS2D(datap,times,extCRS,plot_start,plot_end,reverseZ=True)
             
                         #*************************************************************
                         # User can select whether to save the generated plot
@@ -313,5 +358,11 @@ def main(file_path):
         else:
             None
 
+    return single_row_data  # Return the captured data string
+
 if __name__ == "__main__":
-    main(file_path)
+    single_row_data = main(file_path)  # Store the returned data string
+    print("\nFinal captured data:")
+    print("=" * 50)
+    print(single_row_data)
+    print("=" * 50)
